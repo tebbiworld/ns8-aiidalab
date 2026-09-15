@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Re-run configure-module with the restored settings: env file, Traefik
+# route, start the container on the restored home volume (profile, database,
+# apps and SSH key come with it).
+
+import os
+
+import agent
+import agent.tasks
+
+env = os.environ
+data = {
+    "host": env["TRAEFIK_HOST"],
+    "http2https": env.get("TRAEFIK_HTTP2HTTPS", "True") == "True",
+    "aiida_user_email": env.get("AIIDA_USER_EMAIL", "aiida@localhost"),
+    "aiida_user_first_name": env.get("AIIDA_USER_FIRST_NAME", "AiiDA"),
+    "aiida_user_last_name": env.get("AIIDA_USER_LAST_NAME", "User"),
+    "aiida_user_institution": env.get("AIIDA_USER_INSTITUTION", ""),
+    "default_apps": env.get("DEFAULT_APPS", "").split(),
+    "computer_enabled": env.get("COMPUTER_ENABLED") == "true",
+    "computer_label": env.get("COMPUTER_LABEL", "gpu-node"),
+    "computer_hostname": env.get("COMPUTER_HOSTNAME", ""),
+    "computer_username": env.get("COMPUTER_USERNAME", ""),
+    "computer_port": int(env.get("COMPUTER_PORT", "22")),
+    "computer_workdir": env.get("COMPUTER_WORKDIR", ""),
+    "computer_scheduler": env.get("COMPUTER_SCHEDULER", "core.direct"),
+    "computer_mpirun": env.get("COMPUTER_MPIRUN", "mpirun -np {tot_num_mpiprocs}"),
+    "computer_mpiprocs": int(env.get("COMPUTER_MPIPROCS", "4")),
+    "computer_description": env.get("COMPUTER_DESCRIPTION", ""),
+}
+response = agent.tasks.run(agent_id=env["AGENT_ID"], action="configure-module", data=data)
+agent.assert_exp(response["exit_code"] == 0, "The configure-module subtask failed!")

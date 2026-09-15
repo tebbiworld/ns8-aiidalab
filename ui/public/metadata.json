@@ -1,0 +1,22 @@
+{
+  "name": "AiiDAlab",
+  "description": {
+    "en": "AiiDAlab — web platform for computational chemistry and materials science: AiiDA workflows with full provenance, Jupyter apps (e.g. Quantum ESPRESSO), calculations dispatched over SSH to a remote GPU/compute node",
+    "de": "AiiDAlab — Web-Plattform für Computerchemie und Materialwissenschaft: AiiDA-Workflows mit vollständiger Provenienz, Jupyter-Apps (z. B. Quantum ESPRESSO), Rechnungen per SSH auf einen externen GPU-/Rechenknoten"
+  },
+  "categories": [
+    "development"
+  ],
+  "authors": [
+    {
+      "name": "tebbi",
+      "email": "info@ebbinghaus.world"
+    }
+  ],
+  "docs": {
+    "documentation_url": "https://aiidalab.readthedocs.io/",
+    "bug_url": "https://github.com/tebbiworld/ns8-aiidalab/issues",
+    "code_url": "https://github.com/tebbiworld/ns8-aiidalab"
+  },
+  "source": "ghcr.io/tebbiworld/aiidalab"
+}

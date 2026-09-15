@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Checks beyond the JSON schema: a password must exist, the remote computer
+# needs label/host/user/workdir when enabled.
+
+import json
+import os
+import sys
+
+import agent
+
+agent.set_weight(os.path.basename(__file__), 0)
+
+data = json.load(sys.stdin)
+errors = []
+
+def fail(field, value, error):
+    errors.append({"field": field, "parameter": field, "value": value, "error": error})
+
+if not (data.get("password") or "").strip() and not os.environ.get("PASSWORD_HASH"):
+    fail("password", "", "password_required")
+
+if data.get("computer_enabled"):
+    for f in ("computer_label", "computer_hostname", "computer_username", "computer_workdir"):
+        if not (data.get(f) or "").strip():
+            fail(f, "", "required")
+    if (data.get("computer_workdir") or "").strip() and not data["computer_workdir"].strip().startswith("/"):
+        fail("computer_workdir", data["computer_workdir"], "workdir_must_be_absolute")
+    if (data.get("computer_label") or "").strip() == "localhost":
+        fail("computer_label", "localhost", "label_reserved")
+
+if errors:
+    agent.set_status("validation-failed")
+    json.dump(errors, fp=sys.stdout)
+    sys.exit(2)

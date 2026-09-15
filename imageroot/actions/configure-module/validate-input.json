@@ -1,0 +1,63 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Configure aiidalab",
+    "$id": "http://nethserver.org/json-schema/task/input/aiidalab/configure-module",
+    "description": "Configure the AiiDAlab module",
+    "examples": [
+        {
+            "host": "aiidalab.example.org",
+            "lets_encrypt": true,
+            "http2https": true,
+            "password": "secret",
+            "aiida_user_email": "chemist@example.org",
+            "aiida_user_first_name": "Ada",
+            "aiida_user_last_name": "Lovelace",
+            "aiida_user_institution": "Home lab",
+            "default_apps": ["aiidalab-qe"],
+            "computer_enabled": true,
+            "computer_label": "gpu-node",
+            "computer_hostname": "gpu.example.org",
+            "computer_username": "aiida",
+            "computer_port": 22,
+            "computer_workdir": "/home/aiida/aiida_run",
+            "computer_scheduler": "core.direct",
+            "computer_mpirun": "mpirun -np {tot_num_mpiprocs}",
+            "computer_mpiprocs": 8,
+            "computer_description": "Proxmox LXC with GPU"
+        }
+    ],
+    "type": "object",
+    "required": ["host"],
+    "properties": {
+        "host": { "type": "string", "title": "Host name", "format": "hostname", "pattern": "\\." },
+        "lets_encrypt": { "type": "boolean" },
+        "http2https": { "type": "boolean" },
+        "password": {
+            "type": "string",
+            "title": "Jupyter password",
+            "description": "Login password of the AiiDAlab web interface. Empty: keep the current one (required on the first configuration).",
+            "format": "password",
+            "maxLength": 200
+        },
+        "aiida_user_email": { "type": "string", "title": "AiiDA user e-mail", "description": "Identity recorded in the provenance graph; used when the profile is created.", "maxLength": 200 },
+        "aiida_user_first_name": { "type": "string", "maxLength": 100 },
+        "aiida_user_last_name": { "type": "string", "maxLength": 100 },
+        "aiida_user_institution": { "type": "string", "maxLength": 200 },
+        "default_apps": {
+            "type": "array",
+            "title": "Apps installed at start",
+            "description": "AiiDAlab app names (registry) or git URLs, e.g. aiidalab-qe.",
+            "items": { "type": "string", "pattern": "^[A-Za-z0-9_.:/@+=-]+$" }
+        },
+        "computer_enabled": { "type": "boolean", "title": "Set up a remote computer", "description": "Register an SSH-reachable machine (e.g. a GPU node) as AiiDA computer." },
+        "computer_label": { "type": "string", "pattern": "^[A-Za-z0-9_.-]*$", "maxLength": 64 },
+        "computer_hostname": { "type": "string", "maxLength": 253 },
+        "computer_username": { "type": "string", "pattern": "^[A-Za-z0-9_.-]*$", "maxLength": 64 },
+        "computer_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "computer_workdir": { "type": "string", "maxLength": 500 },
+        "computer_scheduler": { "type": "string", "enum": ["core.direct", "core.slurm", "core.pbspro", "core.torque", "core.sge", "core.lsf"] },
+        "computer_mpirun": { "type": "string", "maxLength": 200 },
+        "computer_mpiprocs": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "computer_description": { "type": "string", "maxLength": 500 }
+    }
+}

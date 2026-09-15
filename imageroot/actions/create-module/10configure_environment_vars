@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Seed the environment for a fresh instance: reserve the TCP port Traefik
+# reverse-proxies to and set defaults until the first configure-module run.
+
+import os
+
+import agent
+
+tcp_ports = [p.strip() for p in os.environ.get("TCP_PORTS", "").split(",") if p.strip()]
+agent.mset_env({
+    "WEB_PORT": tcp_ports[0] if tcp_ports else "8888",
+    "PASSWORD_HASH": "",
+    "AIIDA_USER_EMAIL": "aiida@localhost",
+    "AIIDA_USER_FIRST_NAME": "AiiDA",
+    "AIIDA_USER_LAST_NAME": "User",
+    "AIIDA_USER_INSTITUTION": "",
+    "DEFAULT_APPS": "",
+    "COMPUTER_ENABLED": "false",
+    "COMPUTER_LABEL": "gpu-node",
+    "COMPUTER_HOSTNAME": "",
+    "COMPUTER_USERNAME": "",
+    "COMPUTER_PORT": "22",
+    "COMPUTER_WORKDIR": "/home/{username}/aiida_run",
+    "COMPUTER_SCHEDULER": "core.direct",
+    "COMPUTER_MPIRUN": "mpirun -np {tot_num_mpiprocs}",
+    "COMPUTER_MPIPROCS": "4",
+    "COMPUTER_DESCRIPTION": "",
+})

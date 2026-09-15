@@ -1,0 +1,82 @@
+======AiiDAlab======
+[[https://www.aiidalab.net/|AiiDAlab]] is the web platform of the [[https://www.aiida.net/|AiiDA]] workflow engine for computational chemistry and materials science: run simulations (Quantum ESPRESSO, CP2K, …) through Jupyter apps or notebooks, with every input, code and result recorded in a provenance graph. Calculations can run on a remote machine — for example a GPU container on your Proxmox host — over SSH while AiiDAlab on NethServer keeps the bookkeeping.
+
+====Announcement and talks====
+The AiiDAlab app announcement TBA
+
+AiiDAlab is a community application from the [[ns8:tebbiworld_repository|tebbiworld]] repository. Documentation and source can be found on [[https://github.com/tebbiworld/ns8-aiidalab|Github]]
+
+=====What it does=====
+  * one rootless container with the official ''aiidalab/full-stack'' image (pinned): Jupyter, the AiiDA daemon, PostgreSQL and RabbitMQ, all as the ''jovyan'' user — **one instance is one user's workspace**
+  * published through Traefik with Let's Encrypt, **password login** set from the module settings
+  * AiiDA identity (author in the provenance graph) and apps installed at start (e.g. ''aiidalab-qe'', the Quantum ESPRESSO app) from the settings
+  * **remote computer**: register an SSH-reachable machine (GPU node, cluster) as AiiDA computer from the settings — the instance's SSH public key is displayed, a connection test (''verdi computer test'') is one click
+  * NS8 backup of the whole workspace plus a consistent ''pg_dumpall''; restore
+
+=====Architecture=====
+
+^ Container ^ Image ^ Purpose ^
+| ''aiidalab-app'' | ''docker.io/aiidalab/full-stack:<tag>'' (pinned) | Jupyter on 8888 → node loopback → Traefik; AiiDA daemon, PostgreSQL, RabbitMQ inside |
+
+^ Volume ^ Purpose ^ Backup ^
+| ''aiidalab-home'' | ''/home/jovyan'': AiiDA profile and PostgreSQL data, file repository, apps, notebooks, SSH key | yes (+ ''state/aiidalab.sql'' dump) |
+
+=====Installation=====
+On the NethServer 8 cluster leader:
+
+<code bash>
+add-module ghcr.io/tebbiworld/aiidalab:latest 1
+</code>
+
+or from the Software Center after adding the [[ns8:tebbiworld_repository|tebbiworld repository]].
+
+=====Configuration=====
+Open the instance settings:
+
+  * **Host name**, Let's Encrypt, HTTP→HTTPS
+  * **Login password** — required; hashed and handed to Jupyter, token login is off
+  * **AiiDA identity** — e-mail, name, institution; used when the profile is created at the first start
+  * **Apps installed at start** — app names from the [[https://aiidalab.github.io/aiidalab-registry/|AiiDAlab registry]] or git URLs, one per line (e.g. ''aiidalab-qe''); more apps from the App Store inside AiiDAlab
+  * **Remote computer** — label, host, SSH user and port, work directory, scheduler (''core.direct'' for a plain machine, ''core.slurm'' … for clusters), MPI command and processes per machine
+
+The first start creates the AiiDA profile and installs the apps (a few minutes); the status line on the settings page shows when the web interface is ready. Open ''%%https://<host>/%%'' and log in with the password.
+
+====Using a remote computer (e.g. a GPU node)====
+  - Enable //Remote computer//, fill in the connection data and save — the module runs ''verdi computer setup'' and ''verdi computer configure core.ssh'' with the instance's own key.
+  - Copy the **SSH public key** shown on the settings page into ''~/.ssh/authorized_keys'' of the SSH user on the remote machine.
+  - Click **Test connection** (''verdi computer test'': login, scheduler, work directory, file transfer).
+  - Install the codes on the remote machine (Quantum ESPRESSO ''pw.x'', CP2K, xtb, …, GPU builds welcome) and register them in AiiDAlab (Setup-code widget, the Quantum ESPRESSO app's resource wizard, or ''verdi code create'').
+
+AiiDA copies the inputs over SSH, submits (directly or to the scheduler), polls and retrieves the results into the provenance database on the NethServer node. An existing computer is only re-configured when the settings change — AiiDA computers are immutable once calculations used them; use a new label for a different machine (the module warns if the host name of an existing label differs). A target on the NethServer node itself must be entered as ''host.containers.internal'' — a rootless container cannot reach the node's own IP address.
+
+=====Backup and restore=====
+The backup contains the module settings and the ''aiidalab-home'' volume; right before the snapshot the module writes a consistent ''pg_dumpall'' (''state/aiidalab.sql'') as fallback. A restore recreates the instance, fixes the ownership for the container user, re-applies the settings (incl. the remote computer) and starts it.
+
+=====Resources=====
+About 1.5 GB RAM for Jupyter, AiiDA daemon, PostgreSQL and RabbitMQ; image 2.7 GB; the home volume grows with the file repository. The heavy lifting happens on the remote computer (or on the node's own CPUs through the built-in ''localhost'' computer).
+
+=====Updates=====
+The module pins the ''aiidalab/full-stack'' image (calendar tags). A weekly GitHub Action releases a new module version when a newer tag is at least six weeks old; the Software Center update restarts the container and AiiDA migrates the profile if needed.
+
+=====Licences and trademarks=====
+Unofficial, community-built package, not affiliated with or endorsed by the AiiDA/AiiDAlab teams (MARVEL NCCR, PSI, EPFL). "AiiDA" and "AiiDAlab" are used here only to identify the packaged software; the module logo is the official AiiDAlab logo, used unmodified. AiiDA and AiiDAlab are MIT-licensed; the official image is pulled at runtime and not redistributed. The module's own code is %%GPL%%-3.0-or-later.
+
+=====Links=====
+
+  * [[https://aiidalab.readthedocs.io/|AiiDAlab documentation]]
+  * [[https://aiida.readthedocs.io/|AiiDA documentation]]
+  * [[https://github.com/aiidalab/aiidalab-docker-stack|Official container images]]
+  * [[https://aiidalab-qe.readthedocs.io/|Quantum ESPRESSO app]]
+  * [[https://github.com/tebbiworld/ns8-aiidalab|Module on Github]]
+  * [[https://github.com/tebbiworld/ns8-aiidalab/issues|Bug reports]]
+
+=====Disclaimer=====
+Private hobby project, shared as-is. No warranty, no guaranteed support, use at your own risk.
+
+----
+{{tag>application}}
+{{tag>category:Education}}
+{{tag>status:Alpha}}
+{{tag>certlevel:1}}
+{{tag>repo:tebbiworld}}
+{{tag>description:"AiiDAlab computational chemistry platform with AiiDA workflows and remote GPU/compute node over SSH"}}

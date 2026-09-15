@@ -1,0 +1,48 @@
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# AiiDAlab: one rootless container running docker.io/aiidalab/full-stack
+# (pinned by the module through org.nethserver.images -> ${FULL_STACK_IMAGE}).
+# Everything — Jupyter, the AiiDA daemon, PostgreSQL and RabbitMQ — runs as
+# uid 1000 ("jovyan") inside the container; the whole workspace including
+# the database, the AiiDA profile, apps, notebooks and the SSH key for
+# remote computers lives in the aiidalab-home volume (/home/jovyan).
+#
+# Jupyter listens on 8888, published on the node loopback (${WEB_PORT}) and
+# fronted by Traefik. Authentication: password hash passed through
+# NOTEBOOK_ARGS (state/aiidalab.env, written by configure-module).
+
+[Unit]
+Description=AiiDAlab
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+EnvironmentFile=%S/state/environment
+WorkingDirectory=%S/state
+Restart=always
+TimeoutStartSec=300
+TimeoutStopSec=120
+ExecStartPre=/bin/touch %S/state/aiidalab.env
+ExecStartPre=/bin/rm -f %t/aiidalab.pid %t/aiidalab.ctr-id
+ExecStart=/usr/bin/podman run \
+    --conmon-pidfile %t/aiidalab.pid \
+    --cidfile %t/aiidalab.ctr-id \
+    --cgroups=no-conmon \
+    --replace -d --name aiidalab-app \
+    --stop-timeout 90 \
+    --publish 127.0.0.1:${WEB_PORT}:8888 \
+    --volume aiidalab-home:/home/jovyan \
+    --env-file %S/state/aiidalab.env \
+    ${FULL_STACK_IMAGE}
+ExecStop=/usr/bin/podman stop --ignore --cidfile %t/aiidalab.ctr-id -t 90
+ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/aiidalab.ctr-id
+PIDFile=%t/aiidalab.pid
+Type=forking
+SyslogIdentifier=%u
+
+[Install]
+WantedBy=default.target

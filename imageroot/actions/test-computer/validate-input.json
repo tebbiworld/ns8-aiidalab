@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "test-computer input",
+    "$id": "http://nethserver.org/json-schema/task/input/aiidalab/test-computer",
+    "description": "Run 'verdi computer test' for a registered computer",
+    "examples": [{ "label": "gpu-node" }],
+    "type": "object",
+    "required": ["label"],
+    "properties": {
+        "label": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9_.-]+$" }
+    }
+}

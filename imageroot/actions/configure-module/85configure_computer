@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Register the remote computer in the AiiDA profile (verdi computer setup +
+# configure core.ssh with the container's own SSH key). A computer that
+# already exists is only re-configured (AiiDA computers are immutable once
+# used by calculations); the public key is shown on the settings page so it
+# can be authorised on the remote machine.
+
+import json
+import os
+import subprocess
+import sys
+
+import agent
+
+data = json.load(sys.stdin)
+if not data.get("computer_enabled"):
+    sys.exit(0)
+
+env = os.environ
+label = data["computer_label"].strip()
+subprocess.run([os.path.expanduser("~/.config/bin/aiidalab-wait"), "600"], check=True)
+
+def verdi(*args, check=True):
+    return subprocess.run(["podman", "exec", "aiidalab-app", "bash", "-lc",
+                           " ".join(["verdi"] + [json.dumps(a) if " " in a or "{" in a else a for a in args])],
+                          capture_output=True, text=True, check=check)
+
+exists = label in [l.strip().lstrip("* ") for l in verdi("computer", "list", "-r", check=False).stdout.splitlines() if l.strip()]
+if not exists:
+    cmd = ["computer", "setup", "--non-interactive", "--label", label,
+           "--hostname", data["computer_hostname"].strip(),
+           "--transport", "core.ssh", "--scheduler", data.get("computer_scheduler") or "core.direct",
+           "--work-dir", data["computer_workdir"].strip(),
+           "--mpirun-command", data.get("computer_mpirun") or "mpirun -np {tot_num_mpiprocs}",
+           "--mpiprocs-per-machine", str(int(data.get("computer_mpiprocs") or 4)),
+           "--description", (data.get("computer_description") or "").strip() or f"{label} (set up by NethServer)"]
+    res = verdi(*cmd, check=False)
+    if res.returncode != 0:
+        print(agent.SD_ERR + "verdi computer setup failed: " + res.stderr.strip()[-800:], file=sys.stderr)
+        sys.exit(1)
+    print(f"computer {label} created", file=sys.stderr)
+else:
+    # hostname, scheduler, work dir etc. are immutable once the computer exists
+    shown = verdi("computer", "show", label, check=False).stdout
+    current_host = next((l.split(None, 1)[1].strip() for l in shown.splitlines() if l.strip().startswith("Hostname")), "")
+    wanted_host = data["computer_hostname"].strip()
+    if current_host and current_host != wanted_host:
+        print(agent.SD_WARNING + f"computer {label} exists with hostname {current_host}; AiiDA computers are immutable — "
+              f"use a new label for {wanted_host} (or delete it inside AiiDAlab: verdi computer delete {label})", file=sys.stderr)
+    print(f"computer {label} exists: re-configuring the transport only", file=sys.stderr)
+
+res = verdi("computer", "configure", "core.ssh", label, "--non-interactive",
+            "--username", data["computer_username"].strip(), "--port", str(int(data.get("computer_port") or 22)),
+            "--key-filename", "/home/jovyan/.ssh/id_rsa", "--look-for-keys", "--key-policy", "AutoAddPolicy",
+            "--safe-interval", "5", "--use-login-shell", check=False)
+if res.returncode != 0:
+    print(agent.SD_ERR + "verdi computer configure failed: " + res.stderr.strip()[-800:], file=sys.stderr)
+    sys.exit(1)
+print(f"computer {label} configured (ssh {data['computer_username'].strip()}@{data['computer_hostname'].strip()})", file=sys.stderr)

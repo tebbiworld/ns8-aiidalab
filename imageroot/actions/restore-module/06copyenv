@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Carry the settings of the backed-up instance over to the new one.
+
+import json
+import sys
+
+import agent
+
+request = json.load(sys.stdin)
+env = request["environment"]
+keep = ["TRAEFIK_HOST", "TRAEFIK_HTTP2HTTPS", "PASSWORD_HASH", "AIIDA_USER_EMAIL", "AIIDA_USER_FIRST_NAME", "AIIDA_USER_LAST_NAME",
+        "AIIDA_USER_INSTITUTION", "DEFAULT_APPS", "COMPUTER_ENABLED", "COMPUTER_LABEL", "COMPUTER_HOSTNAME", "COMPUTER_USERNAME",
+        "COMPUTER_PORT", "COMPUTER_WORKDIR", "COMPUTER_SCHEDULER", "COMPUTER_MPIRUN", "COMPUTER_MPIPROCS", "COMPUTER_DESCRIPTION"]
+agent.mset_env({k: env[k] for k in keep if k in env})

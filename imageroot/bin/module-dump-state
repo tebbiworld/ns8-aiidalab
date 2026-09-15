@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Called by the core before the backup: dump the AiiDA PostgreSQL database
+# (running inside the container as jovyan, unix socket in /tmp) into the
+# state directory as a consistent fallback next to the raw home volume.
+
+exec 1>&2
+if podman exec aiidalab-app bash -lc 'mamba run -n aiida-core-services pg_dumpall -h /tmp' > aiidalab.sql.tmp 2>/dev/null && [ -s aiidalab.sql.tmp ]; then
+    mv aiidalab.sql.tmp aiidalab.sql
+    echo "AiiDA database dumped to state/aiidalab.sql ($(du -h aiidalab.sql | cut -f1))"
+else
+    rm -f aiidalab.sql.tmp
+    echo "container not running or dump failed: backing up the home volume as is"
+fi
+exit 0

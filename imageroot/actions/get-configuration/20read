@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Return the stored settings plus live state: web reachable, AiiDA/AiiDAlab
+# versions, the container's public SSH key (to authorise on remote
+# computers) and the registered computers.
+
+import json
+import os
+import subprocess
+import sys
+import urllib.request
+
+import agent
+
+env = os.environ
+host = env.get("TRAEFIK_HOST", "")
+
+running = False
+app_up = False
+versions = {}
+pubkey = ""
+computers = []
+try:
+    st = subprocess.run(["podman", "inspect", "aiidalab-app", "--format", "{{.State.Status}}"],
+                        capture_output=True, text=True, timeout=10).stdout.strip()
+    running = st == "running"
+except Exception:
+    pass
+if running:
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{env['WEB_PORT']}/login", timeout=5) as r:
+            app_up = r.status == 200
+    except Exception:
+        pass
+    try:
+        out = subprocess.run(["podman", "exec", "aiidalab-app", "bash", "-lc",
+                              "cat ~/.ssh/id_rsa.pub 2>/dev/null; echo '@@'; verdi --version 2>/dev/null; echo '@@'; "
+                              "pip show aiidalab 2>/dev/null | grep -i ^version; echo '@@'; verdi computer list -r 2>/dev/null"],
+                             capture_output=True, text=True, timeout=60).stdout
+        parts = out.split("@@")
+        pubkey = parts[0].strip()
+        versions["aiida"] = parts[1].strip().replace("AiiDA version ", "") if len(parts) > 1 else ""
+        versions["aiidalab"] = parts[2].strip().replace("Version: ", "") if len(parts) > 2 else ""
+        computers = [l.strip().lstrip("* ") for l in parts[3].splitlines() if l.strip()] if len(parts) > 3 else []
+    except Exception:
+        pass
+
+config = {
+    "host": host,
+    "http2https": env.get("TRAEFIK_HTTP2HTTPS") == "True",
+    "lets_encrypt": agent.get_route(env["MODULE_ID"]).get("lets_encrypt", False),
+    "password_set": bool(env.get("PASSWORD_HASH", "")),
+    "aiida_user_email": env.get("AIIDA_USER_EMAIL", ""),
+    "aiida_user_first_name": env.get("AIIDA_USER_FIRST_NAME", ""),
+    "aiida_user_last_name": env.get("AIIDA_USER_LAST_NAME", ""),
+    "aiida_user_institution": env.get("AIIDA_USER_INSTITUTION", ""),
+    "default_apps": [a for a in env.get("DEFAULT_APPS", "").split() if a],
+    "computer_enabled": env.get("COMPUTER_ENABLED") == "true",
+    "computer_label": env.get("COMPUTER_LABEL", "gpu-node"),
+    "computer_hostname": env.get("COMPUTER_HOSTNAME", ""),
+    "computer_username": env.get("COMPUTER_USERNAME", ""),
+    "computer_port": int(env.get("COMPUTER_PORT", "22")),
+    "computer_workdir": env.get("COMPUTER_WORKDIR", ""),
+    "computer_scheduler": env.get("COMPUTER_SCHEDULER", "core.direct"),
+    "computer_mpirun": env.get("COMPUTER_MPIRUN", "mpirun -np {tot_num_mpiprocs}"),
+    "computer_mpiprocs": int(env.get("COMPUTER_MPIPROCS", "4")),
+    "computer_description": env.get("COMPUTER_DESCRIPTION", ""),
+    "url": f"https://{host}/" if host else "",
+    "container_running": running,
+    "app_up": app_up,
+    "aiida_version": versions.get("aiida", ""),
+    "aiidalab_version": versions.get("aiidalab", ""),
+    "ssh_public_key": pubkey,
+    "computers": computers,
+}
+json.dump(config, fp=sys.stdout)

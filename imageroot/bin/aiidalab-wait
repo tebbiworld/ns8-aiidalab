@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# Wait until the AiiDA profile inside the container answers (services up,
+# profile created). Usage: aiidalab-wait [timeout-seconds]
+
+timeout=${1:-600}
+for ((i = 0; i < timeout; i += 5)); do
+    # verdi status exits 0 only when config, profile, storage, broker and
+    # daemon are all up
+    if podman exec aiidalab-app bash -lc 'verdi status >/dev/null 2>&1' 2>/dev/null; then
+        exit 0
+    fi
+    sleep 5
+done
+echo "AiiDAlab did not become ready within ${timeout}s" >&2
+exit 1

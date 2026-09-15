@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 tebbi
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# The restic restore writes the home volume as the module user (uid 0 inside
+# the user namespace); everything in the container runs as uid 1000
+# ("jovyan", group 100) and must own it.
+
+set -e
+exec 1>&2
+mp=$(podman volume inspect aiidalab-home --format '{{.Mountpoint}}' 2>/dev/null) || exit 0
+podman unshare chown -R 1000:100 "${mp}"
+echo "aiidalab-home ownership fixed for uid 1000"
