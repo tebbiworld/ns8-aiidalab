@@ -16,7 +16,7 @@ AiiDAlab is a community application from the [[ns8:tebbiworld_repository|tebbiwo
 =====Architecture=====
 
 ^ Container ^ Image ^ Purpose ^
-| ''aiidalab-app'' | ''docker.io/aiidalab/full-stack:<tag>'' (pinned) | Jupyter on 8888 → node loopback → Traefik; AiiDA daemon, PostgreSQL, RabbitMQ inside |
+| ''aiidalab-app'' | ''%%docker.io/aiidalab/full-stack:<tag>%%'' (pinned) | Jupyter on 8888 → node loopback → Traefik; AiiDA daemon, PostgreSQL, RabbitMQ inside |
 
 ^ Volume ^ Purpose ^ Backup ^
 | ''aiidalab-home'' | ''/home/jovyan'': AiiDA profile and PostgreSQL data, file repository, apps, notebooks, SSH key | yes (+ ''state/aiidalab.sql'' dump) |
