@@ -22,20 +22,25 @@ import random
 import sys
 
 import agent
+import modsecrets
 
 data = json.load(sys.stdin)
 
 agent.set_env("TRAEFIK_HOST", data["host"])
 agent.set_env("TRAEFIK_HTTP2HTTPS", data.get("http2https", True))
+if "lets_encrypt" in data:
+    # kept so restore-module can re-create the route with the same setting
+    agent.set_env("TRAEFIK_LETS_ENCRYPT", data["lets_encrypt"])
 
 password = (data.get("password") or "").strip()
-password_hash = os.environ.get("PASSWORD_HASH", "")
+password_hash = modsecrets.get("PASSWORD_HASH")
 if password:
     # Same scheme as jupyter_server.auth.security.passwd(algorithm="sha1")
     salt = "%012x" % random.getrandbits(48)
     digest = hashlib.sha1(password.encode("utf-8") + salt.encode("ascii")).hexdigest()
     password_hash = f"sha1:{salt}:{digest}"
-    agent.set_env("PASSWORD_HASH", password_hash)
+    # the hash is a secret too: state/passwords.env, not the module environment
+    modsecrets.write({"PASSWORD_HASH": password_hash})
 
 user = {
     "AIIDA_USER_EMAIL": (data.get("aiida_user_email") or "aiida@localhost").strip(),
