@@ -13,4 +13,4 @@ set -e
 exec 1>&2
 
 systemctl --user daemon-reload
-systemctl --user restart aiidalab.service
+systemctl --user try-restart aiidalab.service

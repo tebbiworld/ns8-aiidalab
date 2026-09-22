@@ -12,6 +12,8 @@ import json
 import os
 import sys
 
+import modsecrets
+
 import agent
 
 agent.set_weight(os.path.basename(__file__), 0)
@@ -22,7 +24,7 @@ errors = []
 def fail(field, value, error):
     errors.append({"field": field, "parameter": field, "value": value, "error": error})
 
-if not (data.get("password") or "").strip() and not os.environ.get("PASSWORD_HASH"):
+if not (data.get("password") or "").strip() and not modsecrets.get("PASSWORD_HASH"):
     fail("password", "", "password_required")
 
 if data.get("computer_enabled"):

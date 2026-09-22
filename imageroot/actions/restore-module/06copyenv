@@ -11,10 +11,18 @@ import json
 import sys
 
 import agent
+import modsecrets
 
 request = json.load(sys.stdin)
 env = request["environment"]
-keep = ["TRAEFIK_HOST", "TRAEFIK_HTTP2HTTPS", "PASSWORD_HASH", "AIIDA_USER_EMAIL", "AIIDA_USER_FIRST_NAME", "AIIDA_USER_LAST_NAME",
+keep = ["TRAEFIK_HOST", "TRAEFIK_HTTP2HTTPS", "TRAEFIK_LETS_ENCRYPT", "AIIDA_USER_EMAIL", "AIIDA_USER_FIRST_NAME", "AIIDA_USER_LAST_NAME",
         "AIIDA_USER_INSTITUTION", "DEFAULT_APPS", "COMPUTER_ENABLED", "COMPUTER_LABEL", "COMPUTER_HOSTNAME", "COMPUTER_USERNAME",
         "COMPUTER_PORT", "COMPUTER_WORKDIR", "COMPUTER_SCHEDULER", "COMPUTER_MPIRUN", "COMPUTER_MPIPROCS", "COMPUTER_DESCRIPTION"]
 agent.mset_env({k: env[k] for k in keep if k in env})
+
+# The password hash comes back with the restored state/passwords.env. A backup
+# taken with module version 1.0.0 still carries it in the environment.
+if env.get("PASSWORD_HASH"):
+    modsecrets.write({"PASSWORD_HASH": env["PASSWORD_HASH"]})
+    print("restored the legacy password hash from the backup environment into passwords.env", file=sys.stderr)
+modsecrets.ensure({})

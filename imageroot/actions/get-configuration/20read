@@ -16,6 +16,7 @@ import sys
 import urllib.request
 
 import agent
+import modsecrets
 
 env = os.environ
 host = env.get("TRAEFIK_HOST", "")
@@ -54,7 +55,7 @@ config = {
     "host": host,
     "http2https": env.get("TRAEFIK_HTTP2HTTPS") == "True",
     "lets_encrypt": agent.get_route(env["MODULE_ID"]).get("lets_encrypt", False),
-    "password_set": bool(env.get("PASSWORD_HASH", "")),
+    "password_set": bool(modsecrets.get("PASSWORD_HASH")),
     "aiida_user_email": env.get("AIIDA_USER_EMAIL", ""),
     "aiida_user_first_name": env.get("AIIDA_USER_FIRST_NAME", ""),
     "aiida_user_last_name": env.get("AIIDA_USER_LAST_NAME", ""),
