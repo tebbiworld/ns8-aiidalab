@@ -16,7 +16,8 @@
   "docs": {
     "documentation_url": "https://aiidalab.readthedocs.io/",
     "bug_url": "https://github.com/tebbiworld/ns8-aiidalab/issues",
-    "code_url": "https://github.com/tebbiworld/ns8-aiidalab"
+    "code_url": "https://github.com/tebbiworld/ns8-aiidalab",
+    "relnotes_url": "https://github.com/tebbiworld/ns8-aiidalab/releases"
   },
   "source": "ghcr.io/tebbiworld/aiidalab"
 }
