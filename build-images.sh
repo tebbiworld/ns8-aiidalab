@@ -15,7 +15,7 @@ reponame="aiidalab"
 # AiiDA with PostgreSQL and RabbitMQ inside, all running as uid 1000
 # "jovyan"), pinned. Exposed to the unit as ${FULL_STACK_IMAGE} through the
 # org.nethserver.images label. Calendar tags YYYY.NNNN.
-aiidalab_image="docker.io/aiidalab/full-stack:2026.1031"
+aiidalab_image="docker.io/aiidalab/full-stack:2026.1032"
 
 runtime_images=(
     "${aiidalab_image}"
